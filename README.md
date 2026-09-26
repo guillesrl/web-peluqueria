@@ -1,111 +1,125 @@
 # Stylo — Peluquería de autor
 
-Landing page editorial para **Stylo**, un salón de peluquería especializado en coloración, cortes, tratamientos capilares y peinados para eventos.
+Sitio web de **Stylo**, salón de peluquería en Andorra la Vella. Es una landing editorial estática con una experiencia visual controlada por scroll, información de servicios y reserva online mediante Cal.com.
 
-El proyecto está construido como una web estática, con una estética oscura y dorada, tipografía editorial y una experiencia audiovisual basada en scroll.
+## Qué incluye
 
-## Características
+- Hero audiovisual: una secuencia de 120 imágenes WebP se dibuja en un `<canvas>` según el scroll, con imagen de respaldo mientras los frames cargan.
+- Servicios, precios orientativos, duración, contacto y acceso directo a WhatsApp.
+- Calendario de reserva embebido de Cal.com (`peluqueriaa`).
+- Integración prevista de las reservas de Cal.com con n8n para unificar el seguimiento y los recordatorios por WhatsApp.
+- Diseño adaptable a escritorio, tablet y móvil; `prefers-reduced-motion` reduce las animaciones decorativas de CSS y hay focos visibles para teclado.
+- Animaciones de aparición de las secciones con `IntersectionObserver`.
+- Endpoint serverless opcional para crear reservas mediante la API v2 de Cal.com.
 
-- Hero inmersivo con animación controlada por el scroll.
-- Secuencia de 120 imágenes WebP renderizadas en un `<canvas>`.
-- Imagen fallback para mostrar el hero mientras cargan los frames.
-- Secciones de servicios, reserva y contacto.
-- Formularios con validación HTML y mensajes de confirmación en el cliente.
-- Animaciones de entrada mediante `IntersectionObserver`.
-- Diseño responsive para escritorio, tablet y móvil.
-- Soporte para `prefers-reduced-motion`.
-- Estados de foco visibles para navegación por teclado.
-- Tipografías `Instrument Sans` y `Newsreader` cargadas desde Google Fonts.
+## Tecnologías
+
+No hay dependencias de Node.js ni proceso de compilación para la web:
+
+- HTML, CSS y JavaScript nativos.
+- Google Fonts (`Instrument Sans` y `Newsreader`).
+- Cal.com Embed para el calendario público.
+- Vercel Functions para `api/bookings.js` cuando se despliega en Vercel.
 
 ## Estructura
 
 ```text
 .
-├── index.html
-├── script.js
-├── styles.css
-└── media/
-    ├── salon-hero-poster.jpg
-    ├── salon-hero-poster.mp4
-    ├── glassline-carriage-seamless-16x9.png
-    └── frames/
-        ├── frame_0001.webp
-        └── ...
+├── api/
+│   └── bookings.js             # Endpoint opcional para la API de Cal.com
+├── media/
+│   ├── frames/                 # frame_0001.webp … frame_0120.webp
+│   ├── hair-style-journey.jpg
+│   └── salon-hero-poster.jpg
+├── index.html                  # Contenido, calendario Cal.com y metadatos
+├── script.js                   # Canvas del hero y revelado al hacer scroll
+├── styles.css                  # Diseño, animaciones y reglas responsive
+├── vercel.json                 # Configuración de la función serverless
+└── README.md
 ```
 
-### Archivos principales
+## Ejecutar en local
 
-- `index.html`: estructura y contenido de la página.
-- `styles.css`: sistema visual, layout, responsive y animaciones.
-- `script.js`: carga de frames, animación del hero, revelado al hacer scroll y comportamiento de formularios.
-- `media/frames/`: secuencia de imágenes utilizada por el hero. Los nombres deben seguir el patrón `frame_0001.webp` hasta `frame_0120.webp`.
-
-## Ejecutar localmente
-
-No se necesita Node.js, npm ni ninguna dependencia externa para ejecutar el proyecto.
-
-La forma recomendada es iniciar un servidor HTTP local desde la raíz del proyecto:
+Desde la raíz del proyecto:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Después, abre [http://localhost:8000](http://localhost:8000) en el navegador.
+Abre [http://localhost:8000](http://localhost:8000). La página puede abrirse como archivo, pero un servidor HTTP local evita restricciones al cargar las imágenes del hero.
 
-También puede abrirse `index.html` directamente, aunque un servidor local evita posibles restricciones del navegador al cargar recursos y facilita probar el comportamiento completo.
+La sección de reserva carga recursos de `app.cal.com`, por lo que necesita conexión a Internet. La función `api/bookings.js` no se ejecuta con `python3 -m http.server`; para probarla localmente se necesita el entorno de desarrollo de Vercel.
 
-## Cómo funciona la animación del hero
+## Reservas
 
-`script.js` precarga los 120 frames de `media/frames/`. La posición del scroll dentro de `.hero-scroll-container` se convierte en un índice de frame. El índice mostrado se aproxima progresivamente al objetivo mediante `requestAnimationFrame`, creando una transición suave.
+### Calendario de la web
 
-El canvas utiliza una resolución adaptada al `devicePixelRatio` —limitada a 2— para mantener una buena nitidez sin disparar el coste de renderizado.
+`index.html` incrusta el calendario de Cal.com con el enlace `peluqueriaa`. Es el mecanismo de reserva que utiliza actualmente la interfaz pública. Los enlaces de cada servicio desplazan a esa sección; no seleccionan automáticamente un tipo de servicio.
 
-## Personalización
+Para cambiar el calendario o su presentación, edita el bloque de Cal.com en `index.html`:
 
-Los contenidos principales se editan directamente en `index.html`:
+- `calLink`: enlace público de Cal.com.
+- `layout`: vista del calendario.
+- `hideEventTypeDetails`: visibilidad de los detalles de cada tipo de evento.
 
-- Nombre y descripción del salón.
-- Servicios, precios y duración.
-- Horarios disponibles.
-- Dirección, teléfono, email y redes sociales.
-- Texto del hero y del footer.
+### Seguimiento y recordatorios
 
-Los colores y dimensiones globales se encuentran al principio de `styles.css`, dentro de las variables de `:root`.
+Las reservas creadas por el agente de OpenLivery y las creadas desde la web terminan en el mismo calendario de Cal.com. Para que ambas entren en el mismo control de recordatorios, Cal.com debe enviar sus eventos a un webhook de n8n.
 
-Para cambiar la secuencia visual del hero, sustituye los archivos de `media/frames/` manteniendo el patrón de nombres y actualiza `TOTAL_FRAMES` en `script.js` si la cantidad de imágenes cambia.
+El flujo objetivo es:
 
-## Formularios
+```text
+OpenLivery o web → Cal.com → webhook de n8n → tabla reservas_stylo → cron de n8n → plantilla oficial de WhatsApp
+```
 
-La función serverless `api/bookings.js` permite crear reservas de Cal.com sin exponer la API key al navegador. El endpoint está protegido con un secreto compartido entre OpenLivery y Vercel:
+El webhook debe crear o actualizar una fila en `reservas_stylo` con, como mínimo, el identificador de la reserva, fecha/hora, nombre, teléfono, servicio y estado. Las cancelaciones deben marcar o eliminar la fila para que no se envíe un recordatorio. El cron consultará únicamente esa tabla y marcará cada aviso como enviado para evitar duplicados.
 
-- Requiere la cabecera `Authorization: Bearer <OPENLIVERY_BOOKING_SECRET>`.
-- Recibe `start`, `name`, `email`, `phoneNumber`, `eventTypeSlug`/`event_type_slug` y `username`.
-- Construye el objeto `attendee` requerido por Cal.com.
-- No adivina el servicio: el slug debe corresponder al evento solicitado.
-- Requiere configurar `CAL_API_KEY` y `OPENLIVERY_BOOKING_SECRET` como variables de entorno en el hosting.
+La configuración concreta del webhook de Cal.com queda pendiente de añadir en n8n. No debe enviarse información de clientes ni secretos al repositorio.
 
-Ejemplo de petición:
+### API opcional: `POST /api/bookings`
+
+Al desplegar en Vercel se publica una función serverless que reenvía reservas a `https://api.cal.com/v2/bookings`. La landing no la llama por defecto: está disponible para integrar un formulario o cliente propio sin exponer una clave en el navegador.
+
+La petición debe ser JSON y requiere:
+
+- La cabecera `Authorization: Bearer <OPENLIVERY_BOOKING_SECRET>`.
+- `start`: fecha y hora ISO 8601.
+- `name`: nombre del asistente.
+- `email`: correo válido del asistente.
+- `phoneNumber` (o `phone_number`): teléfono del asistente.
+- Uno de `eventTypeSlug` / `event_type_slug` o `eventTypeId` / `event_type_id`.
+
+También admite `timeZone` / `time_zone` (por defecto `Europe/Andorra`), `language` (por defecto `es`), `lengthInMinutes` / `length_in_minutes`, `notes` y `username` (por defecto `peluqueriaa`).
+
+Ejemplo:
 
 ```bash
 curl -X POST https://TU-DOMINIO/api/bookings \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer TU_SECRETO' \
+  -H 'Authorization: Bearer TU_SECRETO_COMPARTIDO' \
   -d '{
     "start": "2026-09-15T10:00:00Z",
     "name": "Nombre del cliente",
     "email": "cliente@example.com",
     "phoneNumber": "+376600000",
     "timeZone": "Europe/Andorra",
-    "eventTypeSlug": "color",
-    "username": "peluqueriaa"
+    "eventTypeSlug": "peinados"
   }'
 ```
 
-Los formularios de reserva y contacto del sitio siguen funcionando únicamente en el navegador hasta conectarlos a este endpoint.
+`OPENLIVERY_BOOKING_SECRET` es obligatorio: protege este endpoint para que solo el sistema autorizado pueda crear reservas. `CAL_API_KEY` es opcional; si se configura como variable de entorno de Vercel, la función la envía como `Bearer` al API de Cal.com. Nunca incluyas secretos en `index.html`, `script.js` ni en el repositorio. La función permite `POST` y solicitudes CORS `OPTIONS`, y responde sin caché.
 
 ## Despliegue
 
-Al ser una web estática, puede publicarse en cualquier hosting que sirva archivos estáticos, por ejemplo GitHub Pages, Netlify, Vercel o un servidor web convencional. Basta con desplegar `index.html`, `styles.css`, `script.js` y la carpeta `media/` conservando su estructura.
+La parte estática puede publicarse en cualquier servidor de archivos estáticos conservando la estructura de `media/`. Para disponer de `/api/bookings`, despliega el proyecto en Vercel: `vercel.json` configura esa función con una duración máxima de 10 segundos.
+
+Antes de publicar, comprueba que el enlace de Cal.com, teléfono, dirección, horarios y enlaces de redes sociales de `index.html` sean los definitivos. Los iconos de Instagram y Pinterest tienen `href="#"` actualmente y deben sustituirse por las URLs reales antes de promocionar el sitio.
+
+## Personalización
+
+- **Contenido comercial y contacto:** `index.html`.
+- **Paleta, espaciado y comportamiento responsive:** variables y reglas de `styles.css`.
+- **Hero:** reemplaza los frames en `media/frames/` y ajusta `TOTAL_FRAMES` en `script.js` si cambia su número. Deben conservar el patrón `frame_0001.webp`, `frame_0002.webp`, etc.
 
 ## Licencia
 
