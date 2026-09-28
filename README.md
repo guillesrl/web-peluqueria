@@ -7,7 +7,7 @@ Sitio web de **Stylo**, salón de peluquería en Andorra la Vella. Es una landin
 - Hero audiovisual: una secuencia de 120 imágenes WebP se dibuja en un `<canvas>` según el scroll, con imagen de respaldo mientras los frames cargan.
 - Servicios, precios orientativos, duración, contacto y acceso directo a WhatsApp.
 - Calendario de reserva embebido de Cal.com (`peluqueriaa`).
-- Integración prevista de las reservas de Cal.com con n8n para unificar el seguimiento y los recordatorios por WhatsApp.
+- Integración de las reservas de Cal.com con n8n para unificar el seguimiento y los recordatorios por WhatsApp.
 - Diseño adaptable a escritorio, tablet y móvil; `prefers-reduced-motion` reduce las animaciones decorativas de CSS y hay focos visibles para teclado.
 - Animaciones de aparición de las secciones con `IntersectionObserver`.
 - Endpoint serverless opcional para crear reservas mediante la API v2 de Cal.com.
@@ -66,7 +66,7 @@ Para cambiar el calendario o su presentación, edita el bloque de Cal.com en `in
 
 Las reservas creadas por el agente de OpenLivery y las creadas desde la web terminan en el mismo calendario de Cal.com. Para que ambas entren en el mismo control de recordatorios, Cal.com debe enviar sus eventos a un webhook de n8n.
 
-El flujo objetivo es:
+El flujo operativo es:
 
 ```text
 OpenLivery o web → Cal.com → webhook de n8n → tabla reservas_stylo → cron de n8n → plantilla oficial de WhatsApp
@@ -74,7 +74,7 @@ OpenLivery o web → Cal.com → webhook de n8n → tabla reservas_stylo → cro
 
 El webhook debe crear o actualizar una fila en `reservas_stylo` con, como mínimo, el identificador de la reserva, fecha/hora, nombre, teléfono, servicio y estado. Las cancelaciones deben marcar o eliminar la fila para que no se envíe un recordatorio. El cron consultará únicamente esa tabla y marcará cada aviso como enviado para evitar duplicados.
 
-La configuración concreta del webhook de Cal.com queda pendiente de añadir en n8n. No debe enviarse información de clientes ni secretos al repositorio.
+El webhook de Cal.com está integrado con n8n para recibir los eventos de reserva y cancelación. La automatización mantiene el seguimiento en `reservas_stylo` y permite que el cron de n8n gestione los recordatorios por WhatsApp. No debe enviarse información de clientes ni secretos al repositorio.
 
 ### API opcional: `POST /api/bookings`
 
