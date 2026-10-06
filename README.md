@@ -6,7 +6,7 @@ Sitio web de **Stylo**, salón de peluquería en Andorra la Vella. Es una landin
 
 - Hero audiovisual: una secuencia de 120 imágenes WebP se dibuja en un `<canvas>` según el scroll, con imagen de respaldo mientras los frames cargan.
 - Servicios, precios orientativos, duración, contacto y acceso directo a WhatsApp.
-- Calendario de reserva de Cal.com (`peluqueriaa`) con Booker Embed; permite elegir uno de los cuatro servicios y preselecciona Andorra (+376) en el campo de teléfono.
+- Calendario de reserva embebido de Cal.com (`peluqueriaa`).
 - Integración de las reservas de Cal.com con n8n para unificar el seguimiento y los recordatorios por WhatsApp.
 - Diseño adaptable a escritorio, tablet y móvil; `prefers-reduced-motion` reduce las animaciones decorativas de CSS y hay focos visibles para teclado.
 - Animaciones de aparición de las secciones con `IntersectionObserver`.
@@ -14,12 +14,11 @@ Sitio web de **Stylo**, salón de peluquería en Andorra la Vella. Es una landin
 
 ## Tecnologías
 
-- La web usa HTML, CSS y JavaScript nativos. Vite compila únicamente la página estática y el componente Booker de Cal.com:
+No hay dependencias de Node.js ni proceso de compilación para la web:
 
 - HTML, CSS y JavaScript nativos.
-- Vite, React y Cal.com Atoms para el calendario.
 - Google Fonts (`Instrument Sans` y `Newsreader`).
-- Cal.com Atoms para el calendario público.
+- Cal.com Embed para el calendario público.
 - Vercel Functions para `api/bookings.js` cuando se despliega en Vercel.
 
 ## Estructura
@@ -55,9 +54,13 @@ La sección de reserva carga recursos de `app.cal.com`, por lo que necesita cone
 
 ### Calendario de la web
 
-`index.html` monta el widget Booker de Cal.com. El componente de `src/stylo-booker.jsx` muestra los tipos públicos de `peluqueriaa` (peinados, tratamiento, corte y color) y fija `defaultPhoneCountry` en `ad`.
+`index.html` incrusta el calendario de Cal.com con el enlace `peluqueriaa`. Es el mecanismo de reserva que utiliza actualmente la interfaz pública. Los enlaces de cada servicio desplazan a esa sección; no seleccionan automáticamente un tipo de servicio.
 
-Para cambiar los servicios, edita la lista `services` de `src/stylo-booker.jsx`. Ejecuta `npm run build` para generar el sitio en `dist/`.
+Para cambiar el calendario o su presentación, edita el bloque de Cal.com en `index.html`:
+
+- `calLink`: enlace público de Cal.com.
+- `layout`: vista del calendario.
+- `hideEventTypeDetails`: visibilidad de los detalles de cada tipo de evento.
 
 ### Seguimiento y recordatorios
 
@@ -108,7 +111,7 @@ curl -X POST https://TU-DOMINIO/api/bookings \
 
 ## Despliegue
 
-El sitio estático se genera en `dist/`, conservando la estructura de `media/`. Para disponer de `/api/bookings`, despliega el proyecto en Vercel: `vercel.json` configura esa función con una duración máxima de 10 segundos.
+La parte estática puede publicarse en cualquier servidor de archivos estáticos conservando la estructura de `media/`. Para disponer de `/api/bookings`, despliega el proyecto en Vercel: `vercel.json` configura esa función con una duración máxima de 10 segundos.
 
 Antes de publicar, comprueba que el enlace de Cal.com, teléfono, dirección, horarios y enlaces de redes sociales de `index.html` sean los definitivos. Los iconos de Instagram y Pinterest tienen `href="#"` actualmente y deben sustituirse por las URLs reales antes de promocionar el sitio.
 
